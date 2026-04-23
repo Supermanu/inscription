@@ -1,0 +1,65 @@
+<html>
+    <body>
+        <style>
+        @charset "UTF-8";
+        @page {
+            margin: 1cm;
+            counter-increment: page;
+            @bottom-right {
+                content: "Page " counter(page) "/" counter(pages);
+                border-top: .25pt solid #666;
+                width: 50%;
+            };
+            size: A4 landscape;
+        }
+
+        html {
+            font-size: 9pt;
+            line-height: 1.2;
+        }
+        html body {
+            margin: 0;
+        }
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            border: 1px solid #14213d;
+            padding: 1mm;
+
+        }
+        html table th, html table td {
+            text-align: center;
+        }
+        html table th:first-of-type, html table td:first-of-type {
+            text-align: left;
+        }
+        html table th:last-of-type, html table td:last-of-type {
+            text-align: right;
+        }
+        </style>
+        <h3>Du {{ date_from }} au {{ date_to }}</h3>
+        <table>
+        <tr>
+            <th>Nom</td>
+            <th>Prénom</td>
+            <th>Option</td>
+            <th>Père</td>
+            <th>Mère</td>
+            <th>Resp tél.</td>
+            <th>Resp email</td>
+        </tr>
+        {% for inscription in inscriptions %}
+        <tr>
+            <td>{{ inscription.student.last_name }}</td>
+            <td>{{ inscription.student.first_name }}</td>
+            <td>{{ inscription.study_year }} {{ inscription.study_option.form.form.0 }} {{ inscription.study_option.channel.channel.0 }} {{ inscription.study_option.option }}</td>
+            <td>{% if inscription.father %}{{ inscription.father.last_name }} {{ inscription.father.first_name }}{% endif %}</td>
+            <td>{% if inscription.mother %}{{ inscription.mother.last_name }} {{ inscription.mother.first_name }}{% endif %}</td>
+            <td>{{ inscription.resp.mobile_phone }}</td>
+            <td>{{ inscription.resp.email }}</td>
+        </tr>
+        {% endfor %}
+        </table>
+    </body>
+</html>

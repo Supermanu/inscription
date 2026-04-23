@@ -1,0 +1,22 @@
+{% extends "core/base_vue.html" %}
+
+{% load vite %}
+
+{% block header %}
+<title>HappySchool : inscription</title>
+{% vite %}
+{% vite "inscription/js/inscription.js" %}
+
+{% endblock %}
+{% block content %}
+
+<script>
+    const current_app = "inscription";
+    const settings = JSON.parse('{{ settings|safe }}');;
+    const menu = {{ menu|safe }};
+    const canValidate = {{ can_validate|safe }};
+    const remoteUrl = {{ remote_url|safe }};
+</script>
+<div id="vue-app"></div>
+
+{% endblock %}
