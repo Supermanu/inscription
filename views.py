@@ -57,7 +57,7 @@ from core.utilities import get_menu
 
 from .models import InscriptionSettingsModel, InscriptionModel
 from .serializers import InscriptionSettingsSerializer, InscriptionSerializer
-
+from datetime import datetime
 
 def get_menu_entry(active_app, request):
     if not request.user.has_perm("inscription.view_inscriptionsettingsmodel"):
@@ -485,6 +485,7 @@ class ExportInscriptionViewclass(View):
             "Prenom",
             "Nationalite",
             "datenaiss",
+            "Majeur ou Mineur",
             "Pays de naissance",
             "Lieu de naissance",
             "Numero carte identite",
@@ -855,8 +856,16 @@ class ExportInscriptionViewclass(View):
             street_student += (
                 f" boîte {subscription['student']['address']['box_number']}"
             )
-        start_date = f"2408{subscription_model.scholar_year[:4]}"
 
+        start_date = f"2408{subscription_model.scholar_year[:4]}"
+        datenaiss = subscription["student_info"]["birth_date"]
+
+        parsed_rentree = datetime.strptime(str(start_date), "%d%m%Y").date()
+        parsed_naissce = datetime.strptime(str(datenaiss), "%Y-%m-%d").date()
+        age = parsed_rentree.year - parsed_naissce.year
+        if (parsed_rentree.month, parsed_rentree.day) < (parsed_naissce.month, parsed_naissce.day):
+            age -= 1
+        majormin = "+" if age >= 18 else "-"
 
         # Création de l'objet contenant toutes les données de l'inscription, colonne après colonne
         data = (
@@ -869,10 +878,11 @@ class ExportInscriptionViewclass(View):
                 channel,            # Fi = La filière (Q, T, P)
                 "",                 # Statut ?
                 subscription_model.matricule,
-                subscription["student"]["last_name"],
-                subscription["student"]["first_name"],
-                self._country_to_proeco(subscription["student"]["nationality"]),
-                self._date_to_proeco(subscription["student_info"]["birth_date"]),
+                subscription["student"]["last_name"],                                       # Nom
+                subscription["student"]["first_name"],                                      # Prenom
+                self._country_to_proeco(subscription["student"]["nationality"]),            # Nationalite
+                self._date_to_proeco(datenaiss),                                            # datenaiss
+                majormin,                                                                   # Majeur ou Mineur, à la date de la rentrée
                 subscription["student_info"]["birth_country_obj"]["acronym"],
                 subscription["student_info"]["birth_place"],
                 subscription["student_info"]["identity_id"],
