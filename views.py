@@ -129,7 +129,9 @@ class InscriptionViewSet(ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = InscriptionFilter
 
+    # Génération d'un matricule unique pour chaque nouvelle inscription : dernier généré dans la DB + 1
     def _generate_matricule(self, serializer):
+        # print("=== [InscriptionViewSet._generate_matricule]")
         prefix = serializer.validated_data["scholar_year"][6:]
         last_subscription = (
             InscriptionModel.objects.filter(
@@ -153,6 +155,7 @@ class InscriptionViewSet(ModelViewSet):
             serializer.save(matricule="undefined")
 
     def perform_update(self, serializer):
+        # print("=== [InscriptionViewSet.perform_update]")
         if (
             serializer.instance.matricule == "undefined"
             and serializer.validated_data["is_validated"]
@@ -179,12 +182,17 @@ class SubscriptionAPI(APIView):
         except ObjectDoesNotExist:
             return None
 
+    # Récupère la liste des inscriptions dans le backend et les retourne dans l'objet subscriptions
     def get(self, request, *args, **kwargs):
+        # print("=== [SubscriptionAPI.get]")
+
         page = kwargs.get("page")
         is_complete = kwargs.get("is_complete")
         scholar_year = kwargs.get("scholar_year")
         pending = kwargs.get("pending") == "true"
         search = kwargs.get("search", "")
+
+        # Si 'pending' : va chercher les info dans InscriptionModel et retourne directement 'subscriptions'
         if pending:
             pending_sub = InscriptionModel.objects.filter(
                 pending=True, scholar_year=scholar_year
@@ -224,6 +232,7 @@ class SubscriptionAPI(APIView):
             ]
             return Response({"results": subscriptions, "next": None})
 
+        # Si pas 'pending' : demande les info au service d'inscription et retourne 'subscriptions'
         big_page = "&page_size=400" if is_complete == "false" else ""
         r = requests.get(
             f"{self.host}/subscribe/api/subscriptionremote/?is_completed={is_complete}&search={search}&scholar_year={scholar_year}&page={page}&order{big_page}",
@@ -317,11 +326,13 @@ class StatsAPI(APIView):
         )
 
 
+# Génération du fichier .pdf
 class ExportPDFInscription(WeasyTemplateView):
     template_name = "inscription/pdflist.html"
     host = settings.SUBSCRIBE_URL
 
     def get_context_data(self, **kwargs) -> dict:
+        # print("=== [ExportPDFInscription.get_context_data]")
         context = super().get_context_data(**kwargs)
         scholar_year = kwargs.get("scholar_year")
         date_from = kwargs.get("date_from")
@@ -397,6 +408,7 @@ class RemoteServerAPI(APIView):
         return Response(status=status.HTTP_202_ACCEPTED)
 
     def get(self, request, *args, **kwargs):
+        # print("=== [RemoteServerAPI.get]")
         remote_path = kwargs.get("path", None)
         print(f"Remote path {remote_path}")
         if not remote_path or remote_path not in self.get_allowed_path:
@@ -439,7 +451,9 @@ class ExportInscriptionViewclass(View):
         # fdb_server = settings.SYNC_FDB_SERVER[0]["server"]
         # return reader.get_matricule_from_register_id(register_id, fdb_server)
 
+    # Génération du fichier .xls
     def get(self, request, *args, **kwargs):
+        # print("=== [ExportInscriptionViewclass.get]")
         uuid = kwargs["subscription"]
         try:
             subscription_model = InscriptionModel.objects.get(uuid=uuid)
@@ -448,10 +462,16 @@ class ExportInscriptionViewclass(View):
             # Class not found
             return HttpResponse(status_code=404)
 
+        # print("*** subscription : ", subscription)
+
+        # Création d'un fichier .xls avec une feuille nommée 'data'
         workbook = xlwt.Workbook()
         worksheet = workbook.add_sheet("data")
         # workbook = xlsxwriter.Workbook(output, {'in_memory': True})
         # worksheet = workbook.add_worksheet()
+
+        # Données générales
+        # - Titre colonnes
         columns = [
             "Date debut",
             "Ecole",
@@ -488,12 +508,14 @@ class ExportInscriptionViewclass(View):
             "orientation",
             "religion",
             "langue 1",
-            "Envoi",
-            "Correspondance",
+            "Envoi",                # deprecated
+            "Correspondance",       # deprecated
+            "Papier/sms/mail",
             "Zone",
         ]
 
         # Father
+        # - Titre colonnes
         columns += [
             "NomPere",
             "PrenomPere",
@@ -512,7 +534,7 @@ class ExportInscriptionViewclass(View):
             "Sexe Pere",
             "Zone Pere",
         ]
-
+        # - Préparation des données dans 'data_father'
         street_father = ""
         if subscription["father"]:
             street_father = f'{subscription["father"]["address"]["street"]}, {subscription["father"]["address"]["street_number"]}'
@@ -560,6 +582,7 @@ class ExportInscriptionViewclass(View):
         ]
 
         # Mother
+        # - Titre colonnes
         columns += [
             "NomMere",
             "PrenomMere",
@@ -579,6 +602,7 @@ class ExportInscriptionViewclass(View):
             "Zone Mere",
         ]
 
+        # - Préparation des données dans 'data_mother'
         street_mother = ""
         if subscription["mother"]:
             street_mother = f'{subscription["mother"]["address"]["street"]}, {subscription["mother"]["address"]["street_number"]}'
@@ -626,6 +650,8 @@ class ExportInscriptionViewclass(View):
             "B",
         ]
 
+        # Responsible
+        # - Titre colonnes
         columns += [
             "NomResp",
             "PrenomResp",
@@ -648,6 +674,7 @@ class ExportInscriptionViewclass(View):
             "Correspondance Resp",
         ]
 
+        # - Préparation des données dans 'data_resp'
         if subscription["responsible"] == "father":
             resp_nom_prenom = f'{subscription["father"]["last_name"]} {subscription["father"]["first_name"]}'
             data_resp = data_father.copy()
@@ -742,7 +769,9 @@ class ExportInscriptionViewclass(View):
                 "+",
             ]
 
-        # Free address.
+
+        # Free address
+        # - Titre colonnes
         columns += [
             "NomRespFree",
             "PrenomRespFree",
@@ -764,16 +793,20 @@ class ExportInscriptionViewclass(View):
             "Envoi RespFree",
             "Correspondance RespFree",
         ]
-
+        # - Préparation des données dans 'data_free_address'
         data_free_address = data_resp.copy()
 
+
         # Last school
+        # - Titre colonnes
         columns += [
             "",
         ]
-
+        # - Préparation des données dans 'data_free_address'
         data_last_school = []
 
+
+        # Préparation des données générales dans les différentes colonnes correspondantes
         an = subscription["study_year"].upper()
         form = (
             subscription["study_option"]["form"]["form"][0].upper()
@@ -796,7 +829,7 @@ class ExportInscriptionViewclass(View):
             subscription["study_option"]["form"]
             and "type B" in subscription["study_option"]["form"]["form"]
         ):
-            an += "B"
+            an += "B"       # On a que des options de type B en 7e, pas de B ajouté pour les autres années
 
         default_classe = (
             subscription["study_option"]["classe"]
@@ -822,16 +855,19 @@ class ExportInscriptionViewclass(View):
             street_student += (
                 f" boîte {subscription['student']['address']['box_number']}"
             )
-        start_date = f"2508{subscription_model.scholar_year[:4]}"
+        start_date = f"2408{subscription_model.scholar_year[:4]}"
+
+
+        # Création de l'objet contenant toutes les données de l'inscription, colonne après colonne
         data = (
             [
-                start_date,  # Date de début
-                1,  # École
+                start_date,         # Date debut -> = jour de la rentrée scolaire
+                1,                  # Ecole -> toujours '1' (= centre scolaire Eperonniers Mercelis CEFA dans PROECO)
                 subscription_model.scholar_year.replace("-", "/"),  # Année scolaire
-                an,  # An
-                form,  # Form
-                channel,  # Filière
-                "",  # Statut ?
+                an,                 # An -> l'année ou l'élève s'incrit (1C, 2C, 3, 4, 5, 6, 7B)
+                form,               # Fo = La forme d'enseignement (P, T, E, L, B, S)               # TODO : quid inscriptions en 4C ou 6S ?
+                channel,            # Fi = La filière (Q, T, P)
+                "",                 # Statut ?
                 subscription_model.matricule,
                 subscription["student"]["last_name"],
                 subscription["student"]["first_name"],
@@ -841,28 +877,29 @@ class ExportInscriptionViewclass(View):
                 subscription["student_info"]["birth_place"],
                 subscription["student_info"]["identity_id"],
                 subscription["student_info"]["national_id"],
-                start_date,  # Date entree
-                start_date,  # Date 1ere entree
+                start_date,                                                                 # Date entree = Date debut = jour de la rentrée scolaire
+                start_date,                                                                 # Date 1ere entree = Date debut = jour de la rentrée scolaire
                 subscription["student"]["email"],
                 subscription["student"]["mobile_phone"],
                 street_student,
                 subscription["student"]["address"]["postal_code"],
                 subscription["student"]["address"]["municipality"],
                 subscription["student"]["address"]["locality"],
-                "BE",  # Pays
+                "BE",                                                                       # Pays
                 "O" if subscription["integration"] else "N",
                 "O" if "is_cpu" in subscription and subscription["is_cpu"] else "N",
-                subscription["health_comment"],
-                "O" if subscription["speech_therapist"] else "N",
-                "M",
-                student_id if student_id else "",
-                default_classe,
-                orientation,
-                "C",  # Religion
-                "N",  # Première langue
-                "SMS",  #
-                "+",  # Correspondance
-                "B",  # Zone
+                subscription["health_comment"],                                             # Sante
+                "O" if subscription["speech_therapist"] else "N",                           # logopede
+                "F" if subscription["student_info"]["gender"] == "Femme" else "M",          # sexe
+                student_id if student_id else "",                                           # matricule
+                default_classe,                                                             # classe -> la classe de l'élève par défaut, selon son choix d'option
+                orientation,                                                                # orientation
+                "C",                                                                        # religion
+                "N",                                                                        # langue 1
+                "SMS",                                                                      # Envoi : deprecated, inutilisable en proeco
+                "+",                                                                        # Correspondance : deprecated, inutilisable en proeco
+                "OOONONNNONNNNN",                                                           # Papier/sms/mail
+                "B",                                                                        # Zone
             ]
             + data_father
             + data_mother
@@ -871,9 +908,11 @@ class ExportInscriptionViewclass(View):
             + data_last_school
         )
 
+        # Préparation du la réponse : indique le type de réponse retournée (fichier text/csv)
         response = HttpResponse(
             content_type="text/csv",
         )
+        # Préparation du la réponse : indique le nom du fichier retourné
         last_name = (
             unidecode(subscription["student"]["last_name"])
             .lower()
@@ -886,11 +925,13 @@ class ExportInscriptionViewclass(View):
         response["Content-Disposition"] = (
             f'attachment; filename="inscription_{last_name}_{first_name}.xls"'
         )
+        # Écrit dans la première ligne de la feuille nommée 'data' les éléments de l'objet 'columns', case après case
         for i, v in enumerate(columns):
             worksheet.write(0, i, v)
+        # Écrit dans la deuxième ligne de la feuille nommée 'data' les éléments de l'objet 'data', case après case
         for i, v in enumerate(data):
             worksheet.write(1, i, v)
 
+        # Sauvegarde le document .xls dans la réponse et retourne celle-ci
         workbook.save(response)
-
         return response
