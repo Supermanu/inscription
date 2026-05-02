@@ -490,6 +490,7 @@ class ExportInscriptionViewclass(View):
             "Lieu de naissance",
             "Numero carte identite",
             "Numero national",
+            "Date Validité",
             "Date entree",
             "Date 1ere entree",
             "email",
@@ -888,6 +889,7 @@ class ExportInscriptionViewclass(View):
                 subscription["student_info"]["birth_place"],
                 subscription["student_info"]["identity_id"],
                 subscription["student_info"]["national_id"],
+                subscription.get("student_info", {}).get("date_validity_id", "-"),          # Date Validité
                 start_date,                                                                 # Date entree = Date debut = jour de la rentrée scolaire
                 start_date,                                                                 # Date 1ere entree = Date debut = jour de la rentrée scolaire
                 subscription["student"]["email"],
