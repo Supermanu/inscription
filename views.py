@@ -513,6 +513,7 @@ class ExportInscriptionViewclass(View):
             "Correspondance",       # deprecated
             "Papier/sms/mail",
             "Zone",
+            "Besoin de FLE",
         ]
 
         # Father
@@ -910,6 +911,7 @@ class ExportInscriptionViewclass(View):
                 "+",                                                                        # Correspondance : deprecated, inutilisable en proeco
                 "OOONONNNONNNNN",                                                           # Papier/sms/mail
                 "B",                                                                        # Zone
+                "O" if subscription.get("fle_needed") else "N",                             # Besoin de FLE
             ]
             + data_father
             + data_mother
