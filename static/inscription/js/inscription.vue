@@ -27,7 +27,7 @@
             </BRow>
             <BTabs content-class="mt-3">
                 <BTab
-                    title="Inscription"
+                    title="Inscriptions"
                     active
                 >
                     <BRow>
@@ -105,13 +105,15 @@
                                     :tbody-tr-class="rowClass"
                                 >
                                     <template #cell(pdf)="data">
+                                        <!-- Lien téléchargement du pdf -->
                                         <a
-                                            :href="`${host}/subscribe/pdf/${data.item.uuid}/`"
+                                            :href="`${host}/subscribe/pdf/${data.item.uuid}/${data.item.validation.matricule}/`"  
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
                                             <IBiFileEarmarkText />
                                         </a>
+                                        <!-- Edition de l'inscription -->
                                         <a
                                             :href="`${host}/subscribe/?edit=true#/options/${data.item.uuid}/`"
                                             target="_blank"
@@ -146,6 +148,7 @@
                                                 <BButton @click="confirmSubcription(data.item.uuid)">Valider</BButton>
                                             </span>
                                         </span>
+                                        <!-- Lien téléchargement du fichier .xls -->
                                         <span v-else-if="data.item.validation">
                                             {{ data.item.validation.matricule }}
                                             <a
@@ -155,6 +158,7 @@
                                                 <IBiBoxArrowUpRight />
                                             </a>
                                         </span>
+                                        <!-- Bouton rouge poubelle -->
                                         <BButton
                                             v-if="canValidate"
                                             variant="danger"
@@ -163,6 +167,7 @@
                                         >
                                             <IBiTrash />
                                         </BButton>
+                                        <!-- Bouton orange marquer complet -->
                                         <span v-if="incomplete">
                                             <BButton
                                                 size="sm"
@@ -187,6 +192,7 @@
                         </BCol>
                     </BRow>
                 </BTab>
+                <!--
                 <BTab
                     v-if="canValidate"
                     title="Réinscription"
@@ -194,13 +200,14 @@
                 >
                     <resubscribe />
                 </BTab>
+                -->
                 <template #tabs-end>
                     <BNavItem
                         :href="`https://inscription.idbbxl.com/subscribe/?from_user=${userName}`"
                         target="_blank"
                         rel="noopener noreferrer"
                     >
-                        Formulaire inscription
+                        Formulaire d'inscription
                     </BNavItem>
                 </template>
             </BTabs>
@@ -431,6 +438,7 @@ export default {
                 });
         },
         isOptionFull: function (optionId, year) {
+            // calcule si le nombre de places maximum est atteint ??
             const option = this.totalSubPerOption.find(
                 opt => opt.uid === `${optionId}_${year}`,
             );
@@ -595,6 +603,8 @@ export default {
                     this.loading = false;
                 });
         },
+
+        // Méthode générant/ouvrant le fichier .xls de l'inscription
         exportSubscription: function (uuid) {
             const sub = this.subscriptions.find(s => s.uuid === uuid);
             const data = {
@@ -606,6 +616,8 @@ export default {
                     window.location.href = `/inscription/export/${uuid}/`;
                 });
         },
+
+        // Méthode préparant les données affichées sur clic sur le bouton gris "Statistiques"
         getStats: function () {
             this.optionErrors = [];
             const requests = [

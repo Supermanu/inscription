@@ -678,6 +678,7 @@ class ExportInscriptionViewclass(View):
         ]
 
         # - Préparation des données dans 'data_resp'
+        # Si le papa est le responsable...
         if subscription["responsible"] == "father":
             resp_nom_prenom = f'{subscription["father"]["last_name"]} {subscription["father"]["first_name"]}'
             data_resp = data_father.copy()
@@ -690,6 +691,8 @@ class ExportInscriptionViewclass(View):
             data_resp.append("1")
             data_resp.append("SMS")
             data_resp.append("+")
+
+        # Si la maman est la responsable...
         elif subscription["responsible"] == "mother":
             resp_nom_prenom = f'{subscription["mother"]["last_name"]} { subscription["mother"]["first_name"]}'
             data_resp = data_mother.copy()
@@ -702,6 +705,8 @@ class ExportInscriptionViewclass(View):
             data_resp.append("2")
             data_resp.append("SMS")
             data_resp.append("+")
+
+        # Si ce n'est ni le papa, ni la maman...
         else:
             street_resp = ""
             if subscription["other_responsible"]:
@@ -876,7 +881,7 @@ class ExportInscriptionViewclass(View):
                 1,                  # Ecole -> toujours '1' (= centre scolaire Eperonniers Mercelis CEFA dans PROECO)
                 subscription_model.scholar_year.replace("-", "/"),  # Année scolaire
                 an,                 # An -> l'année ou l'élève s'incrit (1C, 2C, 3, 4, 5, 6, 7B)
-                form,               # Fo = La forme d'enseignement (P, T, E, L, B, S)               # TODO : quid inscriptions en 4C ou 6S ?
+                form,               # Fo = La forme d'enseignement (P, T, E, L, B, S)
                 channel,            # Fi = La filière (Q, T, P)
                 "",                 # Statut ?
                 subscription_model.matricule,
@@ -889,7 +894,7 @@ class ExportInscriptionViewclass(View):
                 subscription["student_info"]["birth_place"],
                 subscription["student_info"]["identity_id"],
                 subscription["student_info"]["national_id"],
-                subscription.get("student_info", {}).get("date_validity_id", "-"),          # Date Validité
+                subscription.get("student_info", {}).get("validity_id", "-"),               # Date Validité
                 start_date,                                                                 # Date entree = Date debut = jour de la rentrée scolaire
                 start_date,                                                                 # Date 1ere entree = Date debut = jour de la rentrée scolaire
                 subscription["student"]["email"],

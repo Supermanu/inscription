@@ -27,7 +27,7 @@ class InscriptionSettingsModel(models.Model):
 
 class InscriptionModel(models.Model):
     uuid = models.UUIDField(unique=True)
-    matricule = models.CharField(blank=True, max_length=10)
+    matricule = models.CharField(blank=True, max_length=10)         #
     subscription = models.JSONField()
     pending = models.BooleanField(default=False)
     is_validated = models.BooleanField()
